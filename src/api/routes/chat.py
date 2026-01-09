@@ -10,7 +10,7 @@ from typing import Literal, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from src.llm.gemini_client import get_gemini_client
+from src.frameworks.factory import get_rag
 
 router = APIRouter(prefix="/api/chat", tags=["Chat"])
 
@@ -75,7 +75,7 @@ async def send_message(request: ChatMessage) -> ChatResponse:
     - **mode**: 'patient' for simple explanations, 'professional' for technical details
     """
     try:
-        client = get_gemini_client()
+        client = get_rag()
         raw_response = await client.query(
             question=request.message,
             mode=request.mode
@@ -121,7 +121,7 @@ async def check_interactions(request: InteractionCheckRequest) -> InteractionChe
     - **drugs**: List of at least 2 drug names
     """
     try:
-        client = get_gemini_client()
+        client = get_rag()
         analysis = await client.check_interactions(request.drugs)
         
         return InteractionCheckResponse(
@@ -141,7 +141,7 @@ async def chat_health():
     """Health check for the chat service."""
     try:
         # Just verify client can be created
-        get_gemini_client()
+        get_rag()
         return {"status": "healthy", "service": "chat"}
     except Exception as e:
         return {"status": "unhealthy", "error": str(e)}

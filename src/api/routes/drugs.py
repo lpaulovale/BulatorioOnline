@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 from src.database.metadata_cache import get_metadata_cache
 from src.database.vector_store import get_vector_store
-from src.llm.gemini_client import get_gemini_client
+from src.frameworks.factory import get_rag
 
 router = APIRouter(prefix="/api/drugs", tags=["Drugs"])
 
@@ -154,8 +154,8 @@ async def get_drug_summary(drug_id: str) -> DrugSummaryResponse:
         )
     
     try:
-        client = get_gemini_client()
-        summary = await client.get_drug_summary(drug["drug_name"])
+        client = get_rag()
+        summary = await client.query(f"Faça um resumo do medicamento {drug['drug_name']}")
         
         if not summary:
             raise HTTPException(

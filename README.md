@@ -4,7 +4,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)](https://fastapi.tiangolo.com)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-> **Assistente Inteligente de Medicamentos e Protocolos Clínicos** — Sistema RAG com Router Agent inteligente, integração à ANVISA e Protocolos Clínicos do SUS (PCDT)
+> **Assistente Inteligente de Medicamentos** — Sistema RAG multi-framework com agentes especializados, integração ANVISA e pipeline de juízes para respostas seguras
 
 <p align="center">
   <img src="docs/images/demo_professional_mode.webp" alt="Demo: Modo Profissional" width="700">
@@ -16,57 +16,58 @@
 
 ## 📋 Sobre o Projeto
 
-O **PharmaBula** é uma aplicação web que combina técnicas modernas de recuperação de informação com modelos de linguagem para fornecer respostas precisas sobre medicamentos. O sistema foi desenvolvido como Trabalho de Conclusão de Curso (TCC) na Universidade Federal do Piauí (UFPI).
+O **PharmaBula** é uma aplicação web que combina técnicas modernas de RAG (Retrieval-Augmented Generation) com múltiplos frameworks de LLM para fornecer respostas precisas e seguras sobre medicamentos. Desenvolvido como Trabalho de Conclusão de Curso (TCC) na UFPI.
 
 ### ✨ Funcionalidades
 
-- 🔍 **Busca Semântica** — Recuperação inteligente de informações usando embeddings e vector store
-- 💬 **Chat Interativo** — Interface conversacional para perguntas sobre medicamentos
-- 🤖 **Router Agent** — Sistema inteligente que seleciona ferramentas apropriadas para cada consulta
-- 📋 **Protocolos Clínicos** — Acesso aos PCDT (Protocolos Clínicos e Diretrizes Terapêuticas) do SUS
-- 👤 **Modos de Usuário** — Respostas adaptadas para pacientes ou profissionais de saúde
-- ⚡ **Respostas Rápidas** — Sugestões pré-definidas para consultas comuns
+- 🔍 **Busca Semântica** — Recuperação inteligente usando ChromaDB e embeddings
+- 💬 **Chat Interativo** — Interface conversacional com histórico de mensagens
+- 🤖 **Multi-Framework** — Suporte a Claude (MCP), Gemini (LangChain) e GPT (OpenAI)
+- ⚖️ **Pipeline de Juízes** — Avaliação de segurança, qualidade e atribuição de fontes
+- 👤 **Modos de Usuário** — Respostas adaptadas para pacientes ou profissionais
 - 📊 **API RESTful** — Endpoints documentados com FastAPI e Swagger UI
-- 🔄 **Atualização Híbrida** — Dados on-demand da ANVISA com cache inteligente
 
 ---
 
-## 🏗️ Arquitetura
-
-<p align="center">
-  <img src="docs/images/architecture.png" alt="Arquitetura do Sistema" width="700">
-</p>
-
-O sistema utiliza uma arquitetura híbrida multi-estágio:
+## 🏗️ Arquitetura Multi-Framework
 
 ```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   ANVISA API    │────▶│  Data Ingestion  │────▶│  Vector Store   │
-│   CONITEC       │     │   & Processing   │     │   (ChromaDB)    │
-└─────────────────┘     └──────────────────┘     └────────┬────────┘
-                                                          │
-┌─────────────────┐     ┌──────────────────┐     ┌────────▼────────┐
-│   Chat UI       │◀────│   FastAPI        │◀────│  Router Agent   │
-│   (Frontend)    │     │   Backend        │     │  (7 Tools)      │
-└─────────────────┘     └──────────────────┘     └────────┬────────┘
-                                                          │
-                                                 ┌────────▼────────┐
-                                                 │  LLM (Gemini)   │
-                                                 │  RAG Pipeline   │
-                                                 └─────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                          PHARMABULA                                  │
+├─────────────────────────────────────────────────────────────────────┤
+│  config/                     src/shared/                            │
+│  ├── settings.py             ├── schemas/                           │
+│  └── Framework enum          │   ├── message.py                     │
+│      (MCP|LANGCHAIN|OPENAI)  │   ├── judges.py                      │
+│                              │   └── response.py                    │
+├─────────────────────────────────────────────────────────────────────┤
+│                     src/frameworks/                                  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐               │
+│  │     MCP      │  │  LangChain   │  │   OpenAI     │               │
+│  ├──────────────┤  ├──────────────┤  ├──────────────┤               │
+│  │ rag_impl.py  │  │ rag_impl.py  │  │ rag_impl.py  │               │
+│  │ router.py    │  │ router.py    │  │ router.py    │               │
+│  │ server.py    │  │              │  │              │               │
+│  │ judges/      │  │ judges/      │  │ judges/      │               │
+│  │ ├─safety.py  │  │ └─pipeline   │  │ └─pipeline   │               │
+│  │ ├─quality.py │  │              │  │              │               │
+│  │ └─pipeline   │  │              │  │              │               │
+│  └──────────────┘  └──────────────┘  └──────────────┘               │
+│         │                 │                 │                        │
+│         └─────────────────┼─────────────────┘                        │
+│                           ▼                                          │
+│                    factory.py                                        │
+│                    get_rag() → Agent                                 │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-### Tecnologias Utilizadas
+### Frameworks Suportados
 
-| Componente | Tecnologia |
-|------------|------------|
-| Backend | FastAPI, Python 3.10+ |
-| Frontend | HTML5, CSS3, JavaScript |
-| Vector Store | ChromaDB |
-| LLM | Google Gemini API |
-| Router Agent | Custom MPC-style + Pydantic |
-| Scheduler | APScheduler |
-| Data Sources | ANVISA API, CONITEC Portal |
+| Framework | LLM Backend | Padrão de Agente | Recursos |
+|-----------|-------------|------------------|----------|
+| **MCP** | Anthropic Claude | Tool Calling | Prompt caching, MCP protocol |
+| **LangChain** | Google Gemini | LCEL + ReAct | Chains compostas, @tool decorators |
+| **OpenAI** | GPT-4 | Function Calling | JSON mode nativo, multi-turn |
 
 ---
 
@@ -75,37 +76,46 @@ O sistema utiliza uma arquitetura híbrida multi-estágio:
 ### Pré-requisitos
 
 - Python 3.10+
-- pip ou Poetry
-- Chave de API do Google Gemini
+- Pelo menos uma API key: `ANTHROPIC_API_KEY`, `GEMINI_API_KEY` ou `OPENAI_API_KEY`
 
-### Passos
+### Setup
 
 ```bash
-# Clone o repositório
+# Clone
 git clone https://github.com/seu-usuario/pharmabula.git
 cd pharmabula
 
-# Crie um ambiente virtual
+# Ambiente virtual
 python -m venv venv
 source venv/bin/activate  # Linux/macOS
-# ou
-.\venv\Scripts\activate   # Windows
+# ou: .\venv\Scripts\activate  # Windows
 
-# Instale as dependências
+# Dependências
 pip install -r requirements.txt
 
-# Configure as variáveis de ambiente
+# Configuração
 cp .env.example .env
-# Edite o arquivo .env com suas chaves de API
 ```
 
-### Configuração do `.env`
+### `.env` Configuration
 
 ```env
-GEMINI_API_KEY=sua_chave_aqui
-DATABASE_URL=sqlite:///./pharmabula.db
-ANVISA_API_URL=https://api.anvisa.gov.br
-DEBUG=true
+# Framework ativo (MCP, LANGCHAIN, OPENAI)
+ACTIVE_FRAMEWORK=OPENAI
+
+# API Keys (configure pelo menos uma)
+ANTHROPIC_API_KEY=sk-ant-...
+GEMINI_API_KEY=AIza...
+OPENAI_API_KEY=sk-...
+
+# Modelos
+GENERATION_MODEL=claude-3-5-sonnet-20241022
+GEMINI_MODEL=gemini-2.0-flash-exp
+OPENAI_MODEL=gpt-4o
+
+# Features
+ENABLE_JUDGE_PIPELINE=true
+MAX_CONTEXT_MESSAGES=10
 ```
 
 ---
@@ -115,36 +125,48 @@ DEBUG=true
 ### Iniciando o Servidor
 
 ```bash
-# Modo desenvolvimento
+# API
 python -m uvicorn src.api.main:app --reload --port 8000
 
-# Ou diretamente
-python -m src.api.main
+# MCP Server (standalone)
+python -m src.frameworks.mcp.server
 ```
 
 Acesse:
 - 🌐 **Interface Web**: http://localhost:8000
 - 📚 **API Docs**: http://localhost:8000/docs
-- 📖 **ReDoc**: http://localhost:8000/redoc
+
+### Uso Programático
+
+```python
+from src.frameworks.factory import get_rag
+
+# Obtém agente do framework ativo (.env)
+rag = get_rag()
+
+# Query com JSON response
+response = await rag.query(
+    "Quais os efeitos colaterais do paracetamol?",
+    mode="patient"
+)
+# Returns: {"response": "...", "confidence": "alta", "sources": [...], "disclaimer": "..."}
+
+# Ou especifique framework
+from config.settings import Framework
+rag_claude = get_rag(Framework.MCP)
+rag_gemini = get_rag(Framework.LANGCHAIN)
+rag_gpt = get_rag(Framework.OPENAI)
+```
 
 ### Endpoints da API
 
 | Método | Endpoint | Descrição |
 |--------|----------|-----------|
-| `GET` | `/health` | Verifica status do sistema |
 | `POST` | `/api/chat/` | Envia pergunta para o assistente |
-| `GET` | `/api/drugs/` | Lista medicamentos disponíveis |
-| `GET` | `/api/drugs/{id}` | Detalhes de um medicamento |
-| `POST` | `/api/router/analyze` | Analisa requisição com Router Agent |
+| `POST` | `/api/chat/interactions` | Verifica interações medicamentosas |
+| `POST` | `/api/router/analyze` | Analisa com router (MCP/LangChain/OpenAI) |
 | `GET` | `/api/router/tools` | Lista ferramentas disponíveis |
-
-### Exemplo de Requisição
-
-```bash
-curl -X POST http://localhost:8000/api/chat/ \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Quais os efeitos colaterais do paracetamol?", "mode": "patient"}'
-```
+| `GET` | `/api/drugs/search?q=` | Busca medicamentos |
 
 ---
 
@@ -152,53 +174,63 @@ curl -X POST http://localhost:8000/api/chat/ \
 
 ```
 pharmabula/
+├── config/
+│   └── settings.py           # Configurações centralizadas
 ├── src/
-│   ├── api/              # FastAPI application
-│   │   ├── main.py       # Entry point
-│   │   └── routes/       # API endpoints (chat, drugs, router)
-│   ├── database/         # Vector store & cache
-│   ├── frontend/         # Static web interface
-│   ├── llm/              # LLM client & Router Agent
-│   │   └── router/       # Tool registry, schemas, executors
-│   ├── scrapers/         # ANVISA & CONITEC data fetchers
-│   ├── scheduler/        # Background jobs
-│   └── services/         # Business logic
-├── tests/                # Test suite
-├── data/                 # Sample data
-├── docs/                 # Documentation
-├── requirements.txt
+│   ├── api/                  # FastAPI application
+│   │   ├── main.py
+│   │   └── routes/           # chat, drugs, router
+│   ├── frameworks/           # Multi-framework implementations
+│   │   ├── factory.py        # get_rag() factory
+│   │   ├── mcp/              # Anthropic Claude
+│   │   │   ├── rag_implementation.py
+│   │   │   ├── router.py
+│   │   │   ├── server.py     # MCP protocol server
+│   │   │   └── judges/       # Safety, Quality, Source, Format
+│   │   ├── langchain/        # Google Gemini
+│   │   │   ├── rag_implementation.py
+│   │   │   ├── router.py
+│   │   │   └── judges/
+│   │   └── openai/           # GPT-4
+│   │       ├── rag_implementation.py
+│   │       ├── router.py
+│   │       └── judges/
+│   ├── shared/               # Shared components
+│   │   ├── schemas/          # Message, Document, Judge schemas
+│   │   ├── interfaces/       # BaseRAG, BaseJudge
+│   │   └── prompts/          # Generator, Judge prompts
+│   ├── database/             # Vector store (ChromaDB)
+│   ├── frontend/             # Web interface
+│   ├── scrapers/             # ANVISA data fetchers
+│   └── services/             # Business logic
+├── tests/
+├── data/
 └── README.md
 ```
+
+---
+
+## ⚖️ Pipeline de Juízes
+
+Cada resposta é avaliada por 4 juízes especializados:
+
+| Juiz | Peso | Avalia |
+|------|------|--------|
+| **Safety** | 40% | Riscos de automedicação, emergências, disclaimers |
+| **Quality** | 30% | Relevância, completude, precisão, clareza |
+| **Source** | 20% | Atribuição de citações, claims sem suporte |
+| **Format** | 10% | Estrutura, legibilidade, modo apropriado |
+
+**Decisões possíveis**: `APPROVED`, `APPROVED_WITH_CAVEATS`, `NEEDS_REVISION`, `REJECTED`
 
 ---
 
 ## 🧪 Testes
 
 ```bash
-# Executar todos os testes
 pytest
-
-# Com cobertura
 pytest --cov=src --cov-report=html
-
-# Testes específicos
-pytest tests/test_api.py -v
 ```
-
----
-
-## 🎯 Roadmap
-
-- [x] MVP com chat básico
-- [x] Integração com Gemini API
-- [x] Interface responsiva
-- [x] Router Agent com seleção inteligente de ferramentas
-- [x] Protocolos Clínicos (PCDT) do SUS
-- [x] Sistema híbrido de atualização de dados
-- [ ] Cache de embeddings
-- [ ] Suporte offline
-- [ ] App mobile (React Native)
-- [ ] Notificações de recalls
 
 ---
 
@@ -207,21 +239,19 @@ pytest tests/test_api.py -v
 **Paulo Eduardo Borges do Vale**  
 Bacharelado em Ciência da Computação — UFPI
 
-- 📧 Email: paulo@ufpi.edu.br
-
 **Orientador:** Prof. Dr. Pedro Santos Neto
 
 ---
 
 ## 📄 Licença
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+MIT License - veja [LICENSE](LICENSE)
 
 ---
 
 ## ⚠️ Aviso Legal
 
-> Este assistente **não substitui orientação médica profissional**. As informações fornecidas são baseadas em bulas oficiais da ANVISA e devem ser utilizadas apenas como referência. Sempre consulte um profissional de saúde.
+> Este assistente **não substitui orientação médica profissional**. As informações são baseadas em bulas oficiais da ANVISA. Sempre consulte um profissional de saúde.
 
 ---
 

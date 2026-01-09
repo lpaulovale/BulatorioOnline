@@ -1,13 +1,15 @@
 """
 Router API Routes for PharmaBula
 
-Provides endpoints for direct router access, debugging, and tool inspection.
+Provides endpoints for router access using framework-specific implementations.
 """
 
 from typing import Literal, Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
+
+from config.settings import settings, Framework
 
 router = APIRouter(prefix="/api/router", tags=["Router"])
 
@@ -21,13 +23,9 @@ class RouterAnalyzeRequest(BaseModel):
         max_length=2000,
         description="User's question or request"
     )
-    priority: Literal["low", "medium", "high", "urgent"] = Field(
-        default="medium",
-        description="Request priority level"
-    )
-    preferences: dict = Field(
-        default_factory=dict,
-        description="User preferences for tool selection"
+    framework: Literal["mcp", "langchain", "openai"] = Field(
+        default="openai",
+        description="Framework to use for routing"
     )
 
 
@@ -36,83 +34,69 @@ class RouterAnalyzeResponse(BaseModel):
     
     reasoning: str = Field(description="Router's reasoning process")
     selected_tools: list[dict] = Field(description="Tools selected for execution")
-    execution_plan: list[str] = Field(description="Step-by-step execution plan")
-    confidence: str = Field(description="Confidence level (high/medium/low)")
-    estimated_cost: str = Field(description="Estimated cost tier")
-    estimated_time: str = Field(description="Estimated execution time")
-    fallback_plan: str = Field(description="Fallback if primary plan fails")
+    confidence: float = Field(description="Confidence level (0-1)")
+    framework: str = Field(description="Framework used")
 
 
 class ToolInfo(BaseModel):
     """Information about a single tool."""
     
-    id: str
+    name: str
     description: str
-    capabilities: list[str]
-    cost_tier: str
-    latency: str
 
 
 @router.post("/analyze", response_model=RouterAnalyzeResponse)
 async def analyze_request(request: RouterAnalyzeRequest) -> RouterAnalyzeResponse:
     """
-    Analyze a request and return routing decision WITHOUT executing.
-    
-    Useful for debugging and understanding how the router makes decisions.
+    Analyze a request and return routing decision using selected framework.
     
     - **message**: The user's question or request
-    - **priority**: Priority level (affects tool selection)
-    - **preferences**: User preferences (speed, cost sensitivity, etc.)
+    - **framework**: Which framework to use (mcp, langchain, openai)
     """
     try:
-        from src.llm.router import RouterAgent, Priority, UserPreferences, CostTier
-        from src.llm.router.pharmabula_registry import get_cached_pharmabula_registry
+        framework = request.framework
         
-        # Map priority
-        priority_map = {
-            "low": Priority.LOW,
-            "medium": Priority.MEDIUM,
-            "high": Priority.HIGH,
-            "urgent": Priority.URGENT
-        }
-        priority = priority_map.get(request.priority, Priority.MEDIUM)
+        if framework == "mcp":
+            from src.frameworks.mcp.router import get_mcp_router
+            
+            router_agent = get_mcp_router()
+            decision = router_agent.route_request(request.message)
+            
+            return RouterAnalyzeResponse(
+                reasoning=decision.reasoning,
+                selected_tools=[{"name": t} for t in decision.selected_tools],
+                confidence=decision.confidence,
+                framework="mcp"
+            )
         
-        # Build preferences
-        prefs = request.preferences
-        user_prefs = UserPreferences(
-            prefer_speed=prefs.get("prefer_speed", False),
-            cost_sensitivity=CostTier(prefs.get("cost_sensitivity", "medium"))
-        )
+        elif framework == "langchain":
+            from src.frameworks.langchain.router import get_langchain_router
+            
+            router_agent = get_langchain_router()
+            decision = router_agent.route_request(request.message)
+            
+            return RouterAnalyzeResponse(
+                reasoning=decision.reasoning,
+                selected_tools=[{"name": t} for t in decision.selected_tools],
+                confidence=decision.confidence,
+                framework="langchain"
+            )
         
-        # Create router with PharmaBula registry
-        router_agent = RouterAgent(
-            tool_registry=get_cached_pharmabula_registry()
-        )
+        elif framework == "openai":
+            from src.frameworks.openai.router import get_openai_router
+            
+            router_agent = get_openai_router()
+            decision = await router_agent.route_request(request.message)
+            
+            return RouterAnalyzeResponse(
+                reasoning=decision.reasoning,
+                selected_tools=decision.selected_tools,
+                confidence=decision.confidence,
+                framework="openai"
+            )
         
-        # Get routing decision
-        decision = router_agent.route_request(
-            message=request.message,
-            priority=priority,
-            preferences=user_prefs
-        )
-        
-        return RouterAnalyzeResponse(
-            reasoning=decision.reasoning,
-            selected_tools=[
-                {
-                    "tool_id": t.tool_id,
-                    "reason": t.reason,
-                    "order": t.order,
-                    "inputs": t.inputs
-                }
-                for t in decision.selected_tools
-            ],
-            execution_plan=decision.execution_plan,
-            confidence=decision.confidence.value,
-            estimated_cost=decision.estimated_cost.value,
-            estimated_time=decision.estimated_time.value,
-            fallback_plan=decision.fallback_plan
-        )
+        else:
+            raise HTTPException(status_code=400, detail=f"Unknown framework: {framework}")
         
     except Exception as e:
         raise HTTPException(
@@ -121,74 +105,39 @@ async def analyze_request(request: RouterAnalyzeRequest) -> RouterAnalyzeRespons
         )
 
 
-@router.get("/tools", response_model=list[ToolInfo])
-async def list_tools() -> list[ToolInfo]:
+@router.get("/tools")
+async def list_tools(framework: str = "openai") -> list[ToolInfo]:
     """
-    List all available tools in the PharmaBula registry.
-    
-    Returns tool IDs, descriptions, capabilities, and cost/latency info.
+    List available tools for the specified framework.
     """
-    from src.llm.router.pharmabula_registry import get_cached_pharmabula_registry
+    tools = []
     
-    registry = get_cached_pharmabula_registry()
+    if framework == "mcp":
+        from src.frameworks.mcp.router import MCPRouter
+        for tool in MCPRouter.PHARMABULA_TOOLS:
+            tools.append(ToolInfo(name=tool.name, description=tool.description))
     
-    return [
-        ToolInfo(
-            id=tool.id,
-            description=tool.description,
-            capabilities=tool.capabilities,
-            cost_tier=tool.cost_tier.value,
-            latency=tool.latency.value
-        )
-        for tool in registry.tools
-    ]
-
-
-@router.get("/tools/{tool_id}")
-async def get_tool_details(tool_id: str):
-    """
-    Get detailed information about a specific tool.
-    """
-    from src.llm.router.pharmabula_registry import get_cached_pharmabula_registry
+    elif framework == "langchain":
+        tools = [
+            ToolInfo(name="search_drugs", description="Search drug information"),
+            ToolInfo(name="get_drug_details", description="Get detailed drug info"),
+            ToolInfo(name="check_interactions", description="Check drug interactions")
+        ]
     
-    registry = get_cached_pharmabula_registry()
-    tool = registry.get_tool(tool_id)
+    elif framework == "openai":
+        from src.frameworks.openai.router import PHARMABULA_FUNCTIONS
+        for func in PHARMABULA_FUNCTIONS:
+            f = func["function"]
+            tools.append(ToolInfo(name=f["name"], description=f["description"]))
     
-    if not tool:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Tool '{tool_id}' não encontrada"
-        )
-    
-    return {
-        "id": tool.id,
-        "description": tool.description,
-        "capabilities": tool.capabilities,
-        "input_schema": tool.input_schema,
-        "output_schema": tool.output_schema,
-        "cost_tier": tool.cost_tier.value,
-        "latency": tool.latency.value,
-        "requirements": tool.requirements,
-        "examples": tool.examples
-    }
+    return tools
 
 
 @router.get("/health")
 async def router_health():
     """Health check for the router service."""
-    try:
-        from src.llm.router.pharmabula_registry import get_cached_pharmabula_registry
-        
-        registry = get_cached_pharmabula_registry()
-        
-        return {
-            "status": "healthy",
-            "service": "router",
-            "tools_count": len(registry.tools),
-            "apis_count": len(registry.apis)
-        }
-    except Exception as e:
-        return {
-            "status": "unhealthy",
-            "error": str(e)
-        }
+    return {
+        "status": "healthy",
+        "service": "router",
+        "available_frameworks": ["mcp", "langchain", "openai"]
+    }

@@ -1,0 +1,122 @@
+[
+    {
+        "id": "q001",
+        "query": "Para que serve o paracetamol?",
+        "category": "indicacoes",
+        "complexity": "simple"
+    },
+    {
+        "id": "q002",
+        "query": "Qual a dosagem recomendada de ibuprofeno para adultos?",
+        "category": "posologia",
+        "complexity": "simple"
+    },
+    {
+        "id": "q003",
+        "query": "Quais são os efeitos colaterais da dipirona?",
+        "category": "efeitos_colaterais",
+        "complexity": "simple"
+    },
+    {
+        "id": "q004",
+        "query": "O omeprazol pode ser tomado junto com o paracetamol?",
+        "category": "interacoes",
+        "complexity": "moderate"
+    },
+    {
+        "id": "q005",
+        "query": "Quais as contraindicações do uso de aspirina em gestantes?",
+        "category": "contraindicacoes",
+        "complexity": "moderate"
+    },
+    {
+        "id": "q006",
+        "query": "Como funciona o mecanismo de ação do losartana?",
+        "category": "mecanismo",
+        "complexity": "moderate"
+    },
+    {
+        "id": "q007",
+        "query": "Posso tomar amoxicilina se tenho alergia a penicilina?",
+        "category": "contraindicacoes",
+        "complexity": "moderate"
+    },
+    {
+        "id": "q008",
+        "query": "Quais são as interações medicamentosas entre varfarina, AAS e omeprazol?",
+        "category": "interacoes",
+        "complexity": "complex"
+    },
+    {
+        "id": "q009",
+        "query": "Explique as diferenças entre os anti-inflamatórios não esteroides e quando cada um é mais indicado",
+        "category": "comparacao",
+        "complexity": "complex"
+    },
+    {
+        "id": "q010",
+        "query": "Como ajustar a dose de metformina em pacientes com insuficiência renal?",
+        "category": "posologia",
+        "complexity": "complex"
+    },
+    {
+        "id": "q011",
+        "query": "Tomei 3 comprimidos de paracetamol 750mg de uma vez, o que fazer?",
+        "category": "emergencia",
+        "complexity": "urgent"
+    },
+    {
+        "id": "q012",
+        "query": "Quais os sintomas de intoxicação por lítio?",
+        "category": "emergencia",
+        "complexity": "urgent"
+    },
+    {
+        "id": "q013",
+        "query": "Qual o perfil farmacocinético do propranolol?",
+        "category": "farmacologia",
+        "complexity": "professional"
+    },
+    {
+        "id": "q014",
+        "query": "Descreva o protocolo de dessensibilização para alergia a sulfas",
+        "category": "protocolo",
+        "complexity": "professional"
+    },
+    {
+        "id": "q015",
+        "query": "Medicamentos para dor",
+        "category": "vago",
+        "complexity": "simple"
+    },
+    {
+        "id": "q016",
+        "query": "remédio bom pra gripe",
+        "category": "coloquial",
+        "complexity": "simple"
+    },
+    {
+        "id": "q017",
+        "query": "Existe alternativa natural ao rivotril?",
+        "category": "alternativas",
+        "complexity": "moderate"
+    },
+    {
+        "id": "q018",
+        "query": "Minha mãe de 75 anos pode tomar qualquer anti-inflamatório?",
+        "category": "idosos",
+        "complexity": "moderate"
+    },
+    {
+        "id": "q019",
+        "query": "Quais medicamentos evitar durante a amamentação?",
+        "category": "lactacao",
+        "complexity": "moderate"
+    },
+    {
+        "id": "q020",
+        "query": "Posso dirigir depois de tomar clonazepam?",
+        "category": "advertencias",
+        "complexity": "simple"
+    }
+]

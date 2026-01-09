@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "pharmabula": {
+      "command": "python",
+      "args": ["-m", "src.mcp.server"],
+      "cwd": "c:/Users/Paulo/Documents/tcc-final",
+      "env": {
+        "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
+        "GEMINI_API_KEY": "${GEMINI_API_KEY}"
+      }
+    }
+  }
+}
